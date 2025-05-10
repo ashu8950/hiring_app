@@ -1,0 +1,6 @@
+package com.example.onboarding.enums;
+
+public enum CandidateStatus {
+	APPLIED, SCREENING, INTERVIEW_SCHEDULED, INTERVIEWED, OFFERED, ACCEPTED, REJECTED, ONBOARDED, WITHDRAWN, PENDING,
+	ACTIVE
+}
