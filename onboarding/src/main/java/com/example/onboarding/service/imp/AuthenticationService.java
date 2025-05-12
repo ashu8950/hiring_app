@@ -63,7 +63,7 @@ public class AuthenticationService {
 			email = manager.getEmail();
 			role = Role.MANAGER;
 		} else if (request.getRole() == Role.CANDIDATE) {
-			Candidate candidate = candidateRepository.findByEmail(request.getUsername())
+			Candidate candidate = candidateRepository.findByName(request.getUsername())
 					.orElseThrow(() -> new UsernameNotFoundException("Candidate not found"));
 			email = candidate.getEmail();
 			role = Role.CANDIDATE;

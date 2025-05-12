@@ -20,7 +20,6 @@ public class AuthRequest {
 	@Email(message = "Email should be valid")
 	private String email;
 
-	@NotNull(message = "candidateRole reqired like develove,tester etc. ")
 	private CandidateRole candidateRole;
 
 	@NotNull(message = "role require like admin,hr etc.")

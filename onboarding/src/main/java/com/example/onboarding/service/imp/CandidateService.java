@@ -4,7 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -33,18 +36,24 @@ import com.example.onboarding.repository.CandidateRepository;
 @Service
 public class CandidateService {
 
+	private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
+
 	private final CandidateRepository candidateRepository;
 	private final FileStorageService fileStorageService;
 	private final EmailService emailService;
 
 	@Autowired
+	private final CacheManager cacheManager;
+
+	@Autowired
 	private JobOfferProducer jobOfferProducer;
 
 	public CandidateService(CandidateRepository candidateRepository, FileStorageService fileStorageService,
-			EmailService emailService) {
+			EmailService emailService, CacheManager cacheManager) {
 		this.candidateRepository = candidateRepository;
 		this.fileStorageService = fileStorageService;
 		this.emailService = emailService;
+		this.cacheManager = cacheManager;
 	}
 
 	@CacheEvict(value = { "candidateCount", "candidateReportData", "hiredCandidates" }, allEntries = true)
@@ -65,7 +74,7 @@ public class CandidateService {
 		return candidateRepository.save(candidate);
 	}
 
-	@CacheEvict(value = { "candidate", "candidateCount", "candidateReportData", "hiredCandidates" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "candidateCount", "candidateReportData", "hiredCandidates" }, key = "#id")
 	public void deleteCandidate(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -74,6 +83,8 @@ public class CandidateService {
 
 	@Cacheable(value = "hiredCandidates", key = "#page + '-' + #size + '-' + #sortBy + '-' + #direction")
 	public Page<CandidateDTO> getHiredCandidates(int page, int size, String sortBy, String direction) {
+		logger.info("Cache miss: Fetching hired candidates from DB - page={}, size={}, sortBy={}, direction={}", page,
+				size, sortBy, direction);
 		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), sortBy));
 		Page<Candidate> candidates = candidateRepository.findByStatus(CandidateStatus.OFFERED, pageable);
 		return candidates.map(CandidateMapper::toDTO);
@@ -81,12 +92,13 @@ public class CandidateService {
 
 	@Cacheable(value = "candidate", key = "#id")
 	public CandidateDTO getCandidateById(Long id) {
+		logger.info("Cache miss: Fetching candidate with ID {} from DB", id);
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + id));
 		return CandidateMapper.toDTO(candidate);
 	}
 
-	@CacheEvict(value = { "candidate", "hiredCandidates", "candidateReportData" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "hiredCandidates", "candidateReportData" }, key = "#id")
 	public Candidate updateCandidateStatus(Long id, CandidateStatus status) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -94,7 +106,7 @@ public class CandidateService {
 		return candidateRepository.save(candidate);
 	}
 
-	@CacheEvict(value = { "candidate", "hiredCandidates", "candidateReportData" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "hiredCandidates", "candidateReportData" }, key = "#id")
 	public Candidate updateOnboardStatus(Long id, OnboardStatus status) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -102,7 +114,7 @@ public class CandidateService {
 		return candidateRepository.save(candidate);
 	}
 
-	@CacheEvict(value = { "candidate" }, allEntries = true)
+	@CacheEvict(value = { "candidate" }, key = "#id")
 	public void uploadDocument(Long id, MultipartFile file) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -119,7 +131,7 @@ public class CandidateService {
 		candidateRepository.save(candidate);
 	}
 
-	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "candidateReportData" }, key = "#id")
 	public Candidate verifyDocument(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -133,7 +145,7 @@ public class CandidateService {
 		return candidateRepository.save(candidate);
 	}
 
-	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "candidateReportData" }, key = "#id")
 	public CandidatePersonalInfo updatePersonalInfo(Long id, CandidatePersonalInfoDTO newInfo) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -163,7 +175,7 @@ public class CandidateService {
 		return info;
 	}
 
-	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "candidateReportData" }, key = "#id")
 	public CandidateBankInfo updateBankInfo(Long id, CandidateBankInfoDTO bankInfoDTO) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -184,7 +196,7 @@ public class CandidateService {
 		return existing;
 	}
 
-	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
+	@CacheEvict(value = { "candidate", "candidateReportData" }, key = "#id")
 	public CandidateEducationalInfo updateEducationalInfo(Long id, CandidateEducationalInfoDTO educationalInfoDTO) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -219,11 +231,13 @@ public class CandidateService {
 
 	@Cacheable(value = "candidateCount")
 	public Long getCandidateCount() {
+		logger.info("Cache miss: Fetching candidate count from DB");
 		return candidateRepository.count();
 	}
 
 	@Cacheable(value = "candidateReportData")
 	public List<CandidateDTO> getAllCandidateReportData() {
+		logger.info("Cache miss: Fetching all candidate report data from DB");
 		List<Candidate> candidates = candidateRepository.findAll();
 		return candidates.stream().map(CandidateMapper::toDTO).collect(Collectors.toList());
 	}

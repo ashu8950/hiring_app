@@ -25,13 +25,13 @@ public class CustomUserDetails implements UserDetails {
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		// Based on the instance of user, determine the role
 		if (user instanceof Admin) {
-			return Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"));
+			return Collections.singletonList(new SimpleGrantedAuthority("ADMIN"));
 		} else if (user instanceof HR) {
-			return Collections.singletonList(new SimpleGrantedAuthority("ROLE_HR"));
+			return Collections.singletonList(new SimpleGrantedAuthority("HR"));
 		} else if (user instanceof Manager) {
-			return Collections.singletonList(new SimpleGrantedAuthority("ROLE_MANAGER"));
+			return Collections.singletonList(new SimpleGrantedAuthority("MANAGER"));
 		} else if (user instanceof Candidate) {
-			return Collections.singletonList(new SimpleGrantedAuthority("ROLE_CANDIDATE"));
+			return Collections.singletonList(new SimpleGrantedAuthority("CANDIDATE"));
 		}
 		return Collections.emptyList();
 	}

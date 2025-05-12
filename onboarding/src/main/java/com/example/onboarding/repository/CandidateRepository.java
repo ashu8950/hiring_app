@@ -19,6 +19,8 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
 	// Find by email
 	Optional<Candidate> findByEmail(String email);
 
+	Optional<Candidate> findByName(String name);
+
 	// Find by status
 	List<Candidate> findByStatus(CandidateStatus status);
 
@@ -28,4 +30,10 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
 	List<Candidate> findByHr(HR hr);
 
 	List<Candidate> findByManager(Manager manager);
+
+	List<Candidate> findByManagerId(Long managerId);
+
+	Optional<Candidate> findByPhoneNumber(String phoneNumber);
+
+	boolean existsByPhoneNumber(String phoneNumber);
 }

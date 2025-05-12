@@ -58,11 +58,11 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
 						.requestMatchers("/api/candidates/**").permitAll().requestMatchers("/api/branches/**")
-						.permitAll().requestMatchers("/api/teams/**").permitAll().requestMatchers("/export/pdf/**")
-						.permitAll().requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
-						.requestMatchers("/api/hr/**").hasRole("HR").requestMatchers("/api/manager/**")
-						.hasAuthority("MANAGER").requestMatchers("/api/user/**").hasAuthority("USER").anyRequest()
-						.authenticated())
+						.permitAll().requestMatchers("/api/auth/**").permitAll().requestMatchers("/api/teams/**")
+						.permitAll().requestMatchers("/export/pdf/**").permitAll().requestMatchers("/api/admin/**")
+						.hasAnyAuthority("ADMIN").requestMatchers("/api/hr/**").hasRole("HR")
+						.requestMatchers("/api/manager/**").hasAuthority("MANAGER").requestMatchers("/api/user/**")
+						.hasAuthority("USER").anyRequest().authenticated())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();

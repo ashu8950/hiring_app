@@ -50,7 +50,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 					Collections.singletonList(new SimpleGrantedAuthority("MANAGER")));
 		}
 
-		Candidate candidate = candidateRepository.findByEmail(username).orElse(null);
+		Candidate candidate = candidateRepository.findByName(username).orElse(null);
 		if (candidate != null) {
 			return new User(candidate.getEmail(), candidate.getPassword(),
 					Collections.singletonList(new SimpleGrantedAuthority("CANDIDATE")));

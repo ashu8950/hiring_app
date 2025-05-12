@@ -18,8 +18,11 @@ import com.example.onboarding.repository.CandidateRepository;
 import com.example.onboarding.repository.HRRepository;
 import com.example.onboarding.repository.ManagerRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("/api/manager")
+@Slf4j
 public class ManagerController {
 
 	@Autowired
@@ -34,12 +37,14 @@ public class ManagerController {
 	@PreAuthorize("hasAuthority('MANAGER')")
 	@GetMapping("/viewCandidates")
 	public ResponseEntity<?> viewTeamCandidates(Authentication authentication) {
+		log.info(authentication.getName());
 		try {
 			String username = ((UserDetails) authentication.getPrincipal()).getUsername();
+			log.info(username);
 			Manager manager = managerRepository.findByUsername(username)
 					.orElseThrow(() -> new RuntimeException("Manager not found"));
 
-			List<Candidate> candidates = candidateRepository.findByManager(manager);
+			List<Candidate> candidates = candidateRepository.findByManagerId(manager.getId());
 			return ResponseEntity.ok(candidates);
 		} catch (Exception e) {
 			return ResponseEntity.status(500).body("Error fetching candidates: " + e.getMessage());
