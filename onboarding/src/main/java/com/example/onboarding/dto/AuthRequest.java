@@ -1,9 +1,11 @@
 package com.example.onboarding.dto;
 
+import com.example.onboarding.enums.CandidateRole;
 import com.example.onboarding.enums.Role;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -18,8 +20,10 @@ public class AuthRequest {
 	@Email(message = "Email should be valid")
 	private String email;
 
-	private String candidateRole;
+	@NotNull(message = "candidateRole reqired like develove,tester etc. ")
+	private CandidateRole candidateRole;
 
+	@NotNull(message = "role require like admin,hr etc.")
 	private Role role; // Add role to the request (Admin, HR, Manager, Candidate)
 	private Long teamId; // For Manager role, required to assign manager to a team
 	private Long hrId; // For Candidate, HR to assign candidate to HR

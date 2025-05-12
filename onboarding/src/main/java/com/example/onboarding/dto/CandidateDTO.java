@@ -82,10 +82,6 @@ public class CandidateDTO {
 	private CandidatePersonalInfoDTO personalInfo;
 	private CandidateDocumentDTO document;
 
-	// New Argument added (example)
-	@NotBlank(message = "New argument is required") // Adding validation if needed
-	private String newField; // You can replace this with the actual field you're adding
-
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 }

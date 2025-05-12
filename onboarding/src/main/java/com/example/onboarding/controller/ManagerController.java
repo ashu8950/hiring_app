@@ -31,7 +31,7 @@ public class ManagerController {
 	@Autowired
 	private ManagerRepository managerRepository;
 
-	@PreAuthorize("hasRole('MANAGER')")
+	@PreAuthorize("hasAuthority('MANAGER')")
 	@GetMapping("/viewCandidates")
 	public ResponseEntity<?> viewTeamCandidates(Authentication authentication) {
 		try {
@@ -46,7 +46,7 @@ public class ManagerController {
 		}
 	}
 
-	@PreAuthorize("hasRole('MANAGER')")
+	@PreAuthorize("hasAuthority('MANAGER')")
 	@GetMapping("/viewHRs")
 	public ResponseEntity<?> viewAssignedHRs(Authentication authentication) {
 		try {

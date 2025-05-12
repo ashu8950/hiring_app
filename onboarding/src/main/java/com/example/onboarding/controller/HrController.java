@@ -26,7 +26,7 @@ public class HrController {
 	@Autowired
 	private HRRepository hrRepository;
 
-	@PreAuthorize("hasRole('HR')")
+	@PreAuthorize("hasAuthority('HR')")
 	@GetMapping("/viewCandidates")
 	public ResponseEntity<List<Candidate>> viewAssignedCandidates(Authentication authentication) {
 		UserDetails userDetails = (UserDetails) authentication.getPrincipal();

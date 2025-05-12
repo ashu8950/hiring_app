@@ -29,7 +29,7 @@ public class AdminController {
 	private CandidateRepository candidateRepository;
 
 	@PostMapping("/assignManager")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAuthority('ADMIN')")
 	public ResponseEntity<?> assignManager(@RequestParam Long candidateId, @RequestParam Long managerId) {
 		Candidate candidate = candidateRepository.findById(candidateId)
 				.orElseThrow(() -> new RuntimeException("Candidate not found"));
@@ -44,7 +44,7 @@ public class AdminController {
 	}
 
 	@PostMapping("/assignHR")
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAuthority('ADMIN')")
 	public ResponseEntity<?> assignHR(@RequestParam Long candidateId, @RequestParam Long hrId) {
 		Candidate candidate = candidateRepository.findById(candidateId)
 				.orElseThrow(() -> new RuntimeException("Candidate not found"));

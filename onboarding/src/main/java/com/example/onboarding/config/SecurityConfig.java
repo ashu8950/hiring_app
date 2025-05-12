@@ -58,9 +58,10 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
 						.requestMatchers("/api/candidates/**").permitAll().requestMatchers("/api/branches/**")
-						.permitAll().requestMatchers("/api/teams/**").permitAll().requestMatchers("/api/admin/**")
-						.hasRole("ADMIN").requestMatchers("/api/hr/**").hasRole("HR").requestMatchers("/api/manager/**")
-						.hasRole("MANAGER").requestMatchers("/api/user/**").hasRole("USER").anyRequest()
+						.permitAll().requestMatchers("/api/teams/**").permitAll().requestMatchers("/export/pdf/**")
+						.permitAll().requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
+						.requestMatchers("/api/hr/**").hasRole("HR").requestMatchers("/api/manager/**")
+						.hasAuthority("MANAGER").requestMatchers("/api/user/**").hasAuthority("USER").anyRequest()
 						.authenticated())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -70,7 +71,7 @@ public class SecurityConfig {
 	@Bean
 	public JwtAuthenticationConverter jwtAuthenticationConverter() {
 		JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-		grantedAuthoritiesConverter.setAuthorityPrefix(""); // Add the ROLE_ prefix
+		grantedAuthoritiesConverter.setAuthorityPrefix("");
 		grantedAuthoritiesConverter.setAuthoritiesClaimName("roles");
 
 		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();

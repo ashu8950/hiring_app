@@ -1,20 +1,20 @@
 package com.example.onboarding.mapper;
 
 import com.example.onboarding.dto.CandidateDocumentDTO;
-import com.example.onboarding.entity.Candidate;
 import com.example.onboarding.entity.CandidateDocument;
 
 public class CandidateDocumentMapper {
 
 	// Convert CandidateDocument entity to CandidateDocumentDTO
-	public static CandidateDocumentDTO toDTO(Candidate candidate) {
-		if (candidate == null || candidate.getDocument() == null) {
+	public static CandidateDocumentDTO toDTO(CandidateDocument document) {
+		if (document == null) {
 			return null;
 		}
 
-		CandidateDocument document = candidate.getDocument();
 		return new CandidateDocumentDTO(document.getId(), document.getDocumentType(), document.getFileUrl(),
-				document.getVerified(), candidate.getId());
+				document.getVerified(), document.getCandidate() != null ? document.getCandidate().getId() : null // Linking
+																													// candidateId
+		);
 	}
 
 	// Convert CandidateDocumentDTO to CandidateDocument entity

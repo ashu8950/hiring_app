@@ -11,7 +11,6 @@ import com.example.onboarding.entity.Candidate;
 import com.example.onboarding.entity.HR;
 import com.example.onboarding.entity.Manager;
 import com.example.onboarding.entity.Team;
-import com.example.onboarding.enums.CandidateRole;
 import com.example.onboarding.enums.CandidateStatus;
 import com.example.onboarding.enums.OnboardStatus;
 import com.example.onboarding.enums.Role;
@@ -24,9 +23,11 @@ import com.example.onboarding.repository.TeamRepository;
 import com.example.onboarding.service.RegistrationService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RegistrationServiceImpl implements RegistrationService {
 
 	private final AdminRepository adminRepository;
@@ -109,9 +110,10 @@ public class RegistrationServiceImpl implements RegistrationService {
 
 			Candidate candidate = new Candidate();
 			candidate.setName(request.getUsername());
+			log.info(request.getUsername());
 			candidate.setEmail(request.getEmail());
 			candidate.setPassword(passwordEncoder.encode(request.getPassword()));
-			candidate.setRole(CandidateRole.valueOf(request.getCandidateRole()));
+			candidate.setRole(request.getCandidateRole());
 			candidate.setOnboardStatus(OnboardStatus.IN_PROGRESS);
 			candidate.setStatus(CandidateStatus.ACTIVE);
 

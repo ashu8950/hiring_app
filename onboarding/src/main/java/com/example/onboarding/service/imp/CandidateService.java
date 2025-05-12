@@ -1,6 +1,12 @@
 package com.example.onboarding.service.imp;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +20,7 @@ import com.example.onboarding.dto.CandidateEducationalInfoDTO;
 import com.example.onboarding.dto.CandidatePersonalInfoDTO;
 import com.example.onboarding.entity.Candidate;
 import com.example.onboarding.entity.CandidateBankInfo;
+import com.example.onboarding.entity.CandidateDocument;
 import com.example.onboarding.entity.CandidateEducationalInfo;
 import com.example.onboarding.entity.CandidatePersonalInfo;
 import com.example.onboarding.enums.CandidateStatus;
@@ -29,6 +36,7 @@ public class CandidateService {
 	private final CandidateRepository candidateRepository;
 	private final FileStorageService fileStorageService;
 	private final EmailService emailService;
+
 	@Autowired
 	private JobOfferProducer jobOfferProducer;
 
@@ -39,7 +47,7 @@ public class CandidateService {
 		this.emailService = emailService;
 	}
 
-	// Create a new candidate
+	@CacheEvict(value = { "candidateCount", "candidateReportData", "hiredCandidates" }, allEntries = true)
 	public Candidate createCandidate(CandidateDTO candidateDTO) {
 		Candidate candidate = new Candidate();
 		candidate.setName(candidateDTO.getName());
@@ -49,31 +57,36 @@ public class CandidateService {
 		candidate.setOnboardStatus(candidateDTO.getOnboardStatus());
 		candidate.setDocumentPath(candidateDTO.getDocumentPath());
 		candidate.setRole(candidateDTO.getRole());
+
+		LocalDateTime now = LocalDateTime.now();
+		candidate.setCreatedAt(now);
+		candidate.setUpdatedAt(now);
+
 		return candidateRepository.save(candidate);
 	}
 
-	// Delete candidate by ID
+	@CacheEvict(value = { "candidate", "candidateCount", "candidateReportData", "hiredCandidates" }, allEntries = true)
 	public void deleteCandidate(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 		candidateRepository.delete(candidate);
 	}
 
-	// Get hired candidates with pagination
+	@Cacheable(value = "hiredCandidates", key = "#page + '-' + #size + '-' + #sortBy + '-' + #direction")
 	public Page<CandidateDTO> getHiredCandidates(int page, int size, String sortBy, String direction) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), sortBy));
 		Page<Candidate> candidates = candidateRepository.findByStatus(CandidateStatus.OFFERED, pageable);
-		return candidates.map(candidate -> CandidateMapper.toDTO(candidate));
+		return candidates.map(CandidateMapper::toDTO);
 	}
 
-	// Get candidate details by ID
+	@Cacheable(value = "candidate", key = "#id")
 	public CandidateDTO getCandidateById(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + id));
 		return CandidateMapper.toDTO(candidate);
 	}
 
-	// Update candidate's status
+	@CacheEvict(value = { "candidate", "hiredCandidates", "candidateReportData" }, allEntries = true)
 	public Candidate updateCandidateStatus(Long id, CandidateStatus status) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -81,7 +94,7 @@ public class CandidateService {
 		return candidateRepository.save(candidate);
 	}
 
-	// Update candidate's onboard status
+	@CacheEvict(value = { "candidate", "hiredCandidates", "candidateReportData" }, allEntries = true)
 	public Candidate updateOnboardStatus(Long id, OnboardStatus status) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
@@ -89,116 +102,129 @@ public class CandidateService {
 		return candidateRepository.save(candidate);
 	}
 
-	// Upload document for a candidate
+	@CacheEvict(value = { "candidate" }, allEntries = true)
 	public void uploadDocument(Long id, MultipartFile file) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+
 		String fileName = fileStorageService.storeFile(file);
-		candidate.setDocumentPath(fileName);
+
+		CandidateDocument document = new CandidateDocument();
+		document.setDocumentType(file.getOriginalFilename());
+		document.setFileUrl(fileName);
+		document.setVerified(false);
+		document.setCandidate(candidate);
+
+		candidate.setDocument(document);
 		candidateRepository.save(candidate);
 	}
 
-	// Verify document for a candidate
+	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
 	public Candidate verifyDocument(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+
+		CandidateDocument document = candidate.getDocument();
+		if (document != null) {
+			document.setVerified(true);
+		}
+
 		candidate.setOnboardStatus(OnboardStatus.DOCUMENT_VERIFIED);
 		return candidateRepository.save(candidate);
 	}
 
+	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
 	public CandidatePersonalInfo updatePersonalInfo(Long id, CandidatePersonalInfoDTO newInfo) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
-		// Retrieve the current personal info
 		CandidatePersonalInfo info = candidate.getPersonalInfo();
 		if (info == null) {
 			info = new CandidatePersonalInfo();
-			candidate.setPersonalInfo(info);
 		}
 
-		// Update the personal info fields
 		info.setName(newInfo.getName());
 		info.setEmail(newInfo.getEmail());
 		info.setPhoneNumber(newInfo.getPhoneNumber());
 		info.setDateOfBirth(newInfo.getDateOfBirth());
+		info.setGender(newInfo.getGender());
+		info.setAddress(newInfo.getAddress());
+		info.setNationality(newInfo.getNationality());
 
-		// Update the main Candidate fields from the personal info
+		info.setCandidate(candidate);
+		candidate.setPersonalInfo(info);
+
 		candidate.setName(newInfo.getName());
 		candidate.setEmail(newInfo.getEmail());
 		candidate.setPhoneNumber(newInfo.getPhoneNumber());
 
-		// Save both the updated Candidate and CandidatePersonalInfo
 		candidateRepository.save(candidate);
 
 		return info;
 	}
 
-	// Update candidate's bank info
+	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
 	public CandidateBankInfo updateBankInfo(Long id, CandidateBankInfoDTO bankInfoDTO) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
-		// Retrieve the existing bank info for the candidate
 		CandidateBankInfo existing = candidate.getBankInfo();
 		if (existing == null) {
 			existing = new CandidateBankInfo();
 			candidate.setBankInfo(existing);
 		}
 
-		// Update the bank info fields
 		existing.setAccountNumber(bankInfoDTO.getAccountNumber());
 		existing.setBankName(bankInfoDTO.getBankName());
 		existing.setIfscCode(bankInfoDTO.getIfscCode());
+		existing.setCandidate(candidate);
 
-		// Ensure to save both the updated candidate and bank info
 		candidateRepository.save(candidate);
 
 		return existing;
 	}
 
-	// Update candidate's educational info
+	@CacheEvict(value = { "candidate", "candidateReportData" }, allEntries = true)
 	public CandidateEducationalInfo updateEducationalInfo(Long id, CandidateEducationalInfoDTO educationalInfoDTO) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
-		// Retrieve the existing educational info for the candidate
 		CandidateEducationalInfo existing = candidate.getEducationalInfo();
 		if (existing == null) {
 			existing = new CandidateEducationalInfo();
 			candidate.setEducationalInfo(existing);
 		}
 
-		// Update the educational info fields
 		existing.setHighestQualification(educationalInfoDTO.getHighestQualification());
 		existing.setUniversity(educationalInfoDTO.getUniversity());
 		existing.setGraduationYear(educationalInfoDTO.getGraduationYear());
-
-		// Ensure that candidate reference is set for the educational info
 		existing.setCandidate(candidate);
 
-		// Save the candidate and educational info
 		candidateRepository.save(candidate);
 
 		return existing;
 	}
 
-	// Normal email notification (using emailService)
 	public void sendJobOfferEmail(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
-		emailService.sendJobOfferEmail(candidate.getEmail()); // Normal email sending
+		emailService.sendJobOfferEmail(candidate.getEmail());
 	}
 
-	// Job offer notification using RabbitMQ (separate from normal email)
 	public void sendJobOfferNotificationViaRabbitMQ(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 		jobOfferProducer.sendJobOffer(candidate.getId());
 	}
 
-	// Get total count of candidates
+	@Cacheable(value = "candidateCount")
 	public Long getCandidateCount() {
 		return candidateRepository.count();
+	}
+
+	@Cacheable(value = "candidateReportData")
+	public List<CandidateDTO> getAllCandidateReportData() {
+		List<Candidate> candidates = candidateRepository.findAll();
+		return candidates.stream().map(CandidateMapper::toDTO).collect(Collectors.toList());
 	}
 }

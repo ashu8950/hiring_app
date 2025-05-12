@@ -23,6 +23,7 @@ import com.example.onboarding.dto.CandidatePersonalInfoDTO;
 import com.example.onboarding.dto.ErrorResponse;
 import com.example.onboarding.entity.Candidate;
 import com.example.onboarding.entity.CandidateBankInfo;
+import com.example.onboarding.entity.CandidateDocument;
 import com.example.onboarding.entity.CandidateEducationalInfo;
 import com.example.onboarding.entity.CandidatePersonalInfo;
 import com.example.onboarding.enums.CandidateStatus;
@@ -42,14 +43,6 @@ public class CandidateController {
 
 	@Autowired
 	private CandidateService candidateService;
-
-	@PostMapping("/")
-	public ResponseEntity<ApiResponse<CandidateDTO>> createCandidate(@Valid @RequestBody CandidateDTO candidateDTO) {
-		Candidate createdCandidate = candidateService.createCandidate(candidateDTO);
-		CandidateDTO responseDTO = CandidateMapper.toDTO(createdCandidate);
-		ApiResponse<CandidateDTO> response = new ApiResponse<>(true, "Candidate created successfully", responseDTO);
-		return new ResponseEntity<>(response, HttpStatus.CREATED);
-	}
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<ApiResponse<String>> deleteCandidate(@PathVariable Long id) {
@@ -156,10 +149,15 @@ public class CandidateController {
 
 	@PutMapping("/{id}/verify-document")
 	public ResponseEntity<ApiResponse<CandidateDocumentDTO>> verifyDocument(@PathVariable Long id) {
-		Candidate verifiedDocument = candidateService.verifyDocument(id); // Assuming it returns
-																			// CandidateDocument
-		CandidateDocumentDTO responseDTO = CandidateDocumentMapper.toDTO(verifiedDocument); // Corrected to map
-																							// CandidateDocument
+		Candidate verifiedCandidate = candidateService.verifyDocument(id);
+		CandidateDocument verifiedDocument = verifiedCandidate.getDocument();
+
+		if (verifiedDocument == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(new ApiResponse<>(false, "Document not found for candidate", null));
+		}
+
+		CandidateDocumentDTO responseDTO = CandidateDocumentMapper.toDTO(verifiedDocument);
 		ApiResponse<CandidateDocumentDTO> response = new ApiResponse<>(true, "Document verified successfully",
 				responseDTO);
 		return ResponseEntity.ok(response);
