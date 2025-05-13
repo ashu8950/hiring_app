@@ -24,7 +24,7 @@ public class CandidatePersonalInfoMapper {
 		entity.setGender(dto.getGender());
 		entity.setAddress(dto.getAddress());
 		entity.setNationality(dto.getNationality());
-		// Candidate relation to be set in service layer
+
 		return entity;
 	}
 }

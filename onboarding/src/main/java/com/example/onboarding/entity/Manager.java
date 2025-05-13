@@ -2,6 +2,8 @@ package com.example.onboarding.entity;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -34,35 +36,34 @@ public class Manager {
 
 	@Email(message = "Email should be valid")
 	@NotBlank(message = "Email is required")
-	private String email; // Manager's email field
+	private String email;
 
 	@NotBlank(message = "Password is required")
-	private String password; // Manager's password field
+	@JsonIgnore
+	private String password;
 
-	// A manager is associated with one admin (only one admin can manage multiple
-	// managers)
 	@ManyToOne
 	@JoinColumn(name = "admin_id")
 	@NotNull(message = "Admin ID is required")
+	@JsonIgnore
 	private Admin admin;
 
-	// A manager is assigned to a team
 	@ManyToOne
 	@JoinColumn(name = "team_id")
-	private Team team; // Manager is assigned to a team (optional or could be set later)
+	@JsonIgnore
+	private Team team;
 
-	// A manager can have multiple HRs
 	@OneToMany(mappedBy = "manager")
+	@JsonIgnore
 	private List<HR> hrs;
 
-	// A manager can have multiple candidates (these candidates are associated with
-	// the manager)
 	@OneToMany(mappedBy = "manager")
+	@JsonIgnore
 	private List<Candidate> candidates;
 
-	// A manager is assigned to a branch
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "branch_id")
+	@JsonIgnore
 	private Branch branch;
 
 }

@@ -2,6 +2,10 @@ package com.example.onboarding.entity;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -32,28 +36,34 @@ public class HR {
 
 	@Email(message = "Email should be valid")
 	@NotBlank(message = "Email is required")
-	private String email; // HR's email field
+	private String email;
 
 	@NotBlank(message = "Password is required")
-	private String password; // HR's password field
+	@JsonIgnore
+	private String password;
 
 	@ManyToOne
 	@JoinColumn(name = "admin_id")
-	private Admin admin; // Each HR is associated with an Admin
+	@JsonIgnore
+	private Admin admin;
 
 	@ManyToOne
 	@JoinColumn(name = "manager_id")
-	private Manager manager; // HR is associated with a single Manager (Manager can have multiple HRs)
+	@JsonIgnore
+	private Manager manager;
 
 	@ManyToOne
 	@JoinColumn(name = "team_id")
-	private Team team; // HR is assigned to a Team (optional)
+	@JsonIgnore
+	private Team team;
 
-	@OneToMany(mappedBy = "hr")
-	private List<Candidate> candidates; // HR manages multiple Candidates
+	@OneToMany(mappedBy = "hr", cascade = CascadeType.ALL)
+	@JsonManagedReference
+	private List<Candidate> candidates;
 
 	@ManyToOne
 	@JoinColumn(name = "branch_id")
-	private Branch branch; // HR is associated with a Branch
+	@JsonIgnore
+	private Branch branch;
 
 }

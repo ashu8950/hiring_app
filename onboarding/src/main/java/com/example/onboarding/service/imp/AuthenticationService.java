@@ -71,6 +71,8 @@ public class AuthenticationService {
 			throw new UsernameNotFoundException("Invalid role");
 		}
 		UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+		log.info(userDetails.getPassword());
+		log.info(userDetails.getUsername());
 		token = jwtTokenProvider.generateToken(userDetails);
 
 		return new AuthResponse(token, request.getUsername(), email, role.name());

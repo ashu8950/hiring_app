@@ -19,8 +19,8 @@ public class OnboardingApplication {
 		SpringApplication.run(OnboardingApplication.class, args);
 		log.info("server is running");
 //		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-//		String rawPassword = "manager123";
-//		String hashedPasswordFromDb = "$2a$10$rZVmIYmvXMmdphTGraPK4Oo59bAKAMmntvevXGr9huZj0ptwhJp2."; // paste here
+//		String rawPassword = "john1.doe";
+//		String hashedPasswordFromDb = "$2a$10$YWN7waQRHN9Fri23Xzb3teJdvWSca1LfiRlCkYEP4Wt.Uz4ga3.ii"; // paste here
 //
 //		boolean matches = encoder.matches(rawPassword, hashedPasswordFromDb);
 //		System.out.println("Matches? " + matches);

@@ -1,5 +1,7 @@
 package com.example.onboarding.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,6 +22,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CandidateEducationalInfo {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -34,6 +37,7 @@ public class CandidateEducationalInfo {
 	@Min(value = 1900, message = "Graduation year must be valid")
 	private Integer graduationYear;
 
+	@JsonIgnore
 	@OneToOne
 	@JoinColumn(name = "candidate_id", referencedColumnName = "id", nullable = false)
 	private Candidate candidate;

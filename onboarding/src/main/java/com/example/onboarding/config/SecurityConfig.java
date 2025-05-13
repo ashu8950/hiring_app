@@ -60,7 +60,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/candidates/**").permitAll().requestMatchers("/api/branches/**")
 						.permitAll().requestMatchers("/api/auth/**").permitAll().requestMatchers("/api/teams/**")
 						.permitAll().requestMatchers("/export/pdf/**").permitAll().requestMatchers("/api/admin/**")
-						.hasAnyAuthority("ADMIN").requestMatchers("/api/hr/**").hasRole("HR")
+						.hasAuthority("ADMIN").requestMatchers("/api/hr/**").hasAuthority("HR")
 						.requestMatchers("/api/manager/**").hasAuthority("MANAGER").requestMatchers("/api/user/**")
 						.hasAuthority("USER").anyRequest().authenticated())
 				.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

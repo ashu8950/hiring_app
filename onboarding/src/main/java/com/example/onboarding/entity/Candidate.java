@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import com.example.onboarding.enums.CandidateRole;
 import com.example.onboarding.enums.CandidateStatus;
 import com.example.onboarding.enums.OnboardStatus;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -71,22 +74,27 @@ public class Candidate {
 
 	@ManyToOne
 	@JoinColumn(name = "hr_id")
+	@JsonBackReference
 	private HR hr;
 
 	@ManyToOne
 	@JoinColumn(name = "manager_id")
+	@JsonIgnore
 	private Manager manager;
 
 	@ManyToOne
 	@JoinColumn(name = "team_id")
+	@JsonIgnore
 	private Team team;
 
 	@ManyToOne
 	@JoinColumn(name = "admin_id")
+	@JsonIgnore
 	private Admin admin;
 
 	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinColumn(name = "bank_info_id")
+	@JsonManagedReference // Prevent recursion by managing the relationship serialization
 	private CandidateBankInfo bankInfo;
 
 	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
@@ -95,6 +103,7 @@ public class Candidate {
 
 	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@JoinColumn(name = "personal_info_id")
+	@JsonManagedReference
 	private CandidatePersonalInfo personalInfo;
 
 	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)

@@ -15,13 +15,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.onboarding.dto.AuthRequest;
 import com.example.onboarding.dto.AuthResponse;
 import com.example.onboarding.dto.ForgotPasswordDTO;
+import com.example.onboarding.dto.ForgotPasswordEmailDTO;
 import com.example.onboarding.dto.ResetPasswordDTO;
+import com.example.onboarding.dto.ResetPasswordEmailDTO;
 import com.example.onboarding.dto.VerifyOtpDTO;
+import com.example.onboarding.dto.VerifyOtpEmailDTO;
 import com.example.onboarding.entity.Candidate;
 import com.example.onboarding.repository.CandidateRepository;
 import com.example.onboarding.service.RegistrationService;
 import com.example.onboarding.service.imp.AuthenticationService;
+import com.example.onboarding.service.imp.EmailServiceImpl;
 import com.example.onboarding.service.imp.OtpService;
+import com.example.onboarding.service.imp.OtpServiceImpl;
 import com.example.onboarding.service.imp.SmsService;
 
 import jakarta.validation.Valid;
@@ -38,6 +43,8 @@ public class AuthController {
 	private final CandidateRepository candidateRepository;
 	private final OtpService otpService;
 	private final SmsService smsService;
+	private final OtpServiceImpl otpServiceImpl;
+	private final EmailServiceImpl emailServiceImpl;
 	private final PasswordEncoder passwordEncoder;
 
 	// Register API
@@ -93,6 +100,42 @@ public class AuthController {
 			return ResponseEntity.ok("Password has been successfully reset.");
 		}
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found.");
+	}
+
+	// using Email
+
+	@PostMapping("/forgot-password/email")
+	public ResponseEntity<?> forgotPasswordByEmail(@Valid @RequestBody ForgotPasswordEmailDTO request) {
+		if (!candidateRepository.existsByEmail(request.getEmail())) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email not registered.");
+		}
+
+		String otp = otpServiceImpl.generateOtp(request.getEmail());
+		emailServiceImpl.sendOtp(request.getEmail(), otp);
+
+		return ResponseEntity.ok("OTP sent to registered email.");
+	}
+
+	@PostMapping("/verify-otp/email")
+	public ResponseEntity<?> verifyOtpByEmail(@Valid @RequestBody VerifyOtpEmailDTO request) {
+		boolean valid = otpServiceImpl.verifyOtp(request.getEmail(), request.getOtp());
+		if (valid) {
+			return ResponseEntity.ok("OTP verified. You can now reset your password.");
+		}
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid or expired OTP.");
+	}
+
+	@PostMapping("/reset-password/email")
+	public ResponseEntity<?> resetPasswordByEmail(@Valid @RequestBody ResetPasswordEmailDTO request) {
+		if (!otpServiceImpl.verifyOtp(request.getEmail(), request.getOtp())) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Invalid or expired OTP.");
+		}
+
+		return candidateRepository.findByEmail(request.getEmail()).map(candidate -> {
+			candidate.setPassword(passwordEncoder.encode(request.getNewPassword()));
+			candidateRepository.save(candidate);
+			return ResponseEntity.ok("Password has been successfully reset.");
+		}).orElse(ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found."));
 	}
 
 }

@@ -7,5 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.example.onboarding.entity.OtpToken;
 
 public interface OtpTokenRepository extends JpaRepository<OtpToken, Long> {
+
 	Optional<OtpToken> findByPhoneAndOtp(String phone, String otp);
+
+	void deleteByPhone(String phone);
+
 }

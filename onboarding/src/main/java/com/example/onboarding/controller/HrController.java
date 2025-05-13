@@ -1,8 +1,10 @@
 package com.example.onboarding.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -26,17 +28,19 @@ public class HrController {
 	@Autowired
 	private HRRepository hrRepository;
 
+	// View assigned candidates for HR
 	@PreAuthorize("hasAuthority('HR')")
 	@GetMapping("/viewCandidates")
-	public ResponseEntity<List<Candidate>> viewAssignedCandidates(Authentication authentication) {
-		UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+	public ResponseEntity<?> viewAssignedCandidates(Authentication authentication) {
+		String username = ((UserDetails) authentication.getPrincipal()).getUsername();
+		Optional<HR> hrOpt = hrRepository.findByUsername(username);
 
-		// Assuming you store HR username as authentication principal
-		String username = userDetails.getUsername();
+		if (hrOpt.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("HR not found");
+		}
 
-		HR hr = hrRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("HR not found"));
-
-		List<Candidate> candidates = candidateRepository.findByHr(hr);
-		return ResponseEntity.ok(candidates);
+		List<Candidate> candidates = candidateRepository.findByHr(hrOpt.get());
+		return candidates.isEmpty() ? ResponseEntity.status(HttpStatus.NO_CONTENT).body("No candidates found")
+				: ResponseEntity.ok(candidates);
 	}
 }
