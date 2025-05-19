@@ -26,41 +26,37 @@ public class EmailService {
 		message.setText("Congratulations! You have been selected for the position.");
 		mailSender.send(message);
 	}
-	
-	 public void sendJobOfferEmailRabit(Candidate candidate) {
-	        try {
-	            MimeMessage message = mailSender.createMimeMessage();
-	            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-	            
-	            
-	            helper.setTo(candidate.getEmail());
-	            log.info(candidate.getEmail());
-	            helper.setSubject("🎉 Congratulations " + candidate.getName() + " - Job Offer from Our Company!");
 
-	            String content = generateHtmlContent(candidate);
-	            helper.setText(content, true); // true = HTML
+	public void sendJobOfferEmailRabit(Candidate candidate) {
+		try {
+			MimeMessage message = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-	            // Example: adding optional attachment
-	            // helper.addAttachment("OfferLetter.pdf", new ClassPathResource("offer-letter.pdf"));
+			helper.setTo(candidate.getEmail());
+			log.info(candidate.getEmail());
+			helper.setSubject("🎉 Congratulations " + candidate.getName() + " - Job Offer from Our Company!");
 
-	            mailSender.send(message);
+			String content = generateHtmlContent(candidate);
+			helper.setText(content, true); // true = HTML
 
-	        } catch (MessagingException e) {
-	            throw new RuntimeException("Failed to send email to: " + candidate.getEmail(), e);
-	        }
-	    }
+			mailSender.send(message);
 
-	    private String generateHtmlContent(Candidate candidate) {
-	        return """
-	            <html>
-	            <body>
-	                <h2>Hi %s,</h2>
-	                <p>We are thrilled to offer you the position of <strong>%s</strong> at our company!</p>
-	                <p>Please check your onboarding portal for further steps.</p>
-	                <br>
-	                <p>Best regards,<br>The HR Team</p>
-	            </body>
-	            </html>
-	        """.formatted(candidate.getName(), candidate.getRole());
-	    }
+		} catch (MessagingException e) {
+			throw new RuntimeException("Failed to send email to: " + candidate.getEmail(), e);
+		}
+	}
+
+	private String generateHtmlContent(Candidate candidate) {
+		return """
+				    <html>
+				    <body>
+				        <h2>Hi %s,</h2>
+				        <p>We are thrilled to offer you the position of <strong>%s</strong> at our company!</p>
+				        <p>Please check your onboarding portal for further steps.</p>
+				        <br>
+				        <p>Best regards,<br>The HR Team</p>
+				    </body>
+				    </html>
+				""".formatted(candidate.getName(), candidate.getRole());
+	}
 }

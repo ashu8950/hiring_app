@@ -73,4 +73,12 @@ public class GlobalExceptionHandler {
 		logger.warn("Constraint violation", ex);
 		return ResponseEntity.badRequest().body(new ErrorResponse("Validation Error", ex.getMessage()));
 	}
+
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+		logger.warn("Resource Not Found", ex);
+		return ResponseEntity.status(HttpStatus.NOT_FOUND)
+				.body(new ErrorResponse("Resource Not Found", ex.getMessage()));
+	}
+
 }

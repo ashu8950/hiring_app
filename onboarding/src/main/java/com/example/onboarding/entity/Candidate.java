@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import com.example.onboarding.enums.CandidateRole;
 import com.example.onboarding.enums.CandidateStatus;
 import com.example.onboarding.enums.OnboardStatus;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -43,38 +42,38 @@ public class Candidate {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message = "Name is required")
-	@Size(max = 100, message = "Name can be a maximum of 100 characters")
+	@NotBlank
+	@Size(max = 100)
 	private String name;
 
-	@Email(message = "Email should be valid")
-	@NotBlank(message = "Email is required")
+	@Email
+	@NotBlank
 	private String email;
 
-	@Pattern(regexp = "^\\d{10}$", message = "Phone number should be 10 digits")
+	@Pattern(regexp = "^\\d{10}$")
 	private String phoneNumber;
 
-	@NotNull(message = "Status is required")
+	@NotNull
 	@Enumerated(EnumType.STRING)
 	private CandidateStatus status;
 
-	@NotNull(message = "Onboard status is required")
+	@NotNull
 	@Enumerated(EnumType.STRING)
 	private OnboardStatus onboardStatus;
 
-	private String documentPath;
-
-	@NotNull(message = "Role is required")
+	@NotNull
 	@Enumerated(EnumType.STRING)
 	private CandidateRole role;
 
-	@NotBlank(message = "Password is required")
-	@Size(min = 8, message = "Password should be at least 8 characters")
+	@NotBlank
+	@Size(min = 8)
 	private String password;
+
+	private String documentPath;
 
 	@ManyToOne
 	@JoinColumn(name = "hr_id")
-	@JsonBackReference
+	@JsonIgnore
 	private HR hr;
 
 	@ManyToOne
@@ -92,27 +91,27 @@ public class Candidate {
 	@JsonIgnore
 	private Admin admin;
 
-	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "bank_info_id")
-	@JsonManagedReference // Prevent recursion by managing the relationship serialization
+	@ManyToOne
+	@JoinColumn(name = "branch_id")
+	@JsonIgnore
+	private Branch branch;
+
+	// One-to-one children, cascade & orphanRemoval
+	@OneToOne(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	@JsonManagedReference
 	private CandidateBankInfo bankInfo;
 
-	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "educational_info_id")
+	@OneToOne(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	@JsonManagedReference
 	private CandidateEducationalInfo educationalInfo;
 
-	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "personal_info_id")
+	@OneToOne(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	@JsonManagedReference
 	private CandidatePersonalInfo personalInfo;
 
-	@OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-	@JoinColumn(name = "candidate_document_id")
+	@OneToOne(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+	@JsonManagedReference
 	private CandidateDocument document;
-
-	@ManyToOne
-	@JoinColumn(name = "branch_id")
-	private Branch branch;
 
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
@@ -120,12 +119,12 @@ public class Candidate {
 	@PrePersist
 	public void prePersist() {
 		LocalDateTime now = LocalDateTime.now();
-		this.createdAt = now;
-		this.updatedAt = now;
+		createdAt = now;
+		updatedAt = now;
 	}
 
 	@PreUpdate
 	public void preUpdate() {
-		this.updatedAt = LocalDateTime.now();
+		updatedAt = LocalDateTime.now();
 	}
 }

@@ -7,5 +7,9 @@ import com.example.onboarding.entity.CandidateEducationalInfo;
 
 @Repository
 public interface CandidateEducationalInfoRepository extends JpaRepository<CandidateEducationalInfo, Long> {
-    CandidateEducationalInfo findByCandidateId(Long candidateId);
+
+	CandidateEducationalInfo findByCandidateId(Long candidateId);
+
+	// Add a method to delete educational info by candidate ID
+	void deleteByCandidateId(Long candidateId);
 }

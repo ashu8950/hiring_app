@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,28 +26,29 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CandidatePersonalInfo {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message = "Name is required")
+	@NotBlank
 	private String name;
 
-	@Email(message = "Email should be valid")
+	@Email
 	private String email;
 
-	@NotNull(message = "Date of birth is required")
+	@NotNull
 	private LocalDate dateOfBirth;
 
-	@Pattern(regexp = "^\\d{10}$", message = "Phone number should be 10 digits")
+	@Pattern(regexp = "^\\d{10}$")
 	private String phoneNumber;
 
 	private String gender;
 	private String address;
 	private String nationality;
 
-	@OneToOne
-	@JoinColumn(name = "candidate_id")
+	@OneToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "candidate_id", nullable = false, unique = true)
 	@JsonBackReference
 	private Candidate candidate;
 }

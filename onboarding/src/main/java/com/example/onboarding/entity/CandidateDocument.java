@@ -3,11 +3,12 @@ package com.example.onboarding.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,20 +21,21 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CandidateDocument {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@NotBlank(message = "Document type is required")
+	@NotBlank
 	private String documentType;
 
-	@NotBlank(message = "File URL is required")
+	@NotBlank
 	private String fileUrl;
 
 	private Boolean verified;
 
-	@ManyToOne
-	@JoinColumn(name = "candidate_id")
+	@OneToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "candidate_id", nullable = false, unique = true)
 	@JsonBackReference
 	private Candidate candidate;
 }

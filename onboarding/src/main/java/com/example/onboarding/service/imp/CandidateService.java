@@ -2,11 +2,11 @@ package com.example.onboarding.service.imp;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.onboarding.dto.CandidateBankInfoDTO;
@@ -31,6 +32,9 @@ import com.example.onboarding.enums.OnboardStatus;
 import com.example.onboarding.exception.ResourceNotFoundException;
 import com.example.onboarding.mapper.CandidateMapper;
 import com.example.onboarding.producer.JobOfferProducer;
+import com.example.onboarding.repository.CandidateBankInfoRepository;
+import com.example.onboarding.repository.CandidateDocumentRepository;
+import com.example.onboarding.repository.CandidateEducationalInfoRepository;
 import com.example.onboarding.repository.CandidateRepository;
 
 @Service
@@ -39,21 +43,27 @@ public class CandidateService {
 	private static final Logger logger = LoggerFactory.getLogger(CandidateService.class);
 
 	private final CandidateRepository candidateRepository;
+	private final CandidateBankInfoRepository candidateBankInfoRepository;
+	private final CandidateEducationalInfoRepository candidateEducationalInfoRepository;
+	private final CandidateDocumentRepository candidateDocumentRepository;
 	private final FileStorageService fileStorageService;
 	private final EmailService emailService;
-
-	@Autowired
+	private final JobOfferProducer jobOfferProducer;
 	private final CacheManager cacheManager;
 
-	@Autowired
-	private JobOfferProducer jobOfferProducer;
-
-	public CandidateService(CandidateRepository candidateRepository, FileStorageService fileStorageService,
-			EmailService emailService, CacheManager cacheManager) {
+	public CandidateService(CandidateRepository candidateRepository,
+			CandidateEducationalInfoRepository candidateEducationalInfoRepository,
+			CandidateBankInfoRepository candidateBankInfoRepository,
+			CandidateDocumentRepository candidateDocumentRepository, FileStorageService fileStorageService,
+			EmailService emailService, CacheManager cacheManager, JobOfferProducer jobOfferProducer) {
 		this.candidateRepository = candidateRepository;
+		this.candidateEducationalInfoRepository = candidateEducationalInfoRepository;
+		this.candidateBankInfoRepository = candidateBankInfoRepository;
+		this.candidateDocumentRepository = candidateDocumentRepository;
 		this.fileStorageService = fileStorageService;
 		this.emailService = emailService;
 		this.cacheManager = cacheManager;
+		this.jobOfferProducer = jobOfferProducer;
 	}
 
 	@CacheEvict(value = { "candidateCount", "candidateReportData", "hiredCandidates" }, allEntries = true)
@@ -75,9 +85,11 @@ public class CandidateService {
 	}
 
 	@CacheEvict(value = { "candidate", "candidateCount", "candidateReportData", "hiredCandidates" }, key = "#id")
+	@Transactional
 	public void deleteCandidate(Long id) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
+
 		candidateRepository.delete(candidate);
 	}
 
@@ -103,6 +115,7 @@ public class CandidateService {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 		candidate.setStatus(status);
+		candidate.setUpdatedAt(LocalDateTime.now());
 		return candidateRepository.save(candidate);
 	}
 
@@ -111,23 +124,45 @@ public class CandidateService {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 		candidate.setOnboardStatus(status);
+		candidate.setUpdatedAt(LocalDateTime.now());
 		return candidateRepository.save(candidate);
 	}
 
+	@Transactional
 	@CacheEvict(value = { "candidate" }, key = "#id")
 	public void uploadDocument(Long id, MultipartFile file) {
 		Candidate candidate = candidateRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
-		String fileName = fileStorageService.storeFile(file);
+		CandidateDocument existingDocument = candidateDocumentRepository.findByCandidateId(candidate.getId());
 
-		CandidateDocument document = new CandidateDocument();
-		document.setDocumentType(file.getOriginalFilename());
-		document.setFileUrl(fileName);
-		document.setVerified(false);
-		document.setCandidate(candidate);
+		if (existingDocument != null) {
+			fileStorageService.deleteFile(existingDocument.getFileUrl());
+			candidateDocumentRepository.delete(existingDocument);
+		}
 
-		candidate.setDocument(document);
+		String originalName = org.springframework.util.StringUtils.cleanPath(file.getOriginalFilename());
+		String extension = "";
+
+		int dotIndex = originalName.lastIndexOf(".");
+		if (dotIndex > 0) {
+			extension = originalName.substring(dotIndex);
+		}
+
+		String uniqueFileName = UUID.randomUUID().toString() + extension;
+
+		String newFileName = fileStorageService.storeFile(file, uniqueFileName);
+
+		CandidateDocument newDocument = new CandidateDocument();
+		newDocument.setDocumentType(originalName);
+		newDocument.setFileUrl(newFileName);
+		newDocument.setVerified(false);
+		newDocument.setCandidate(candidate);
+
+		candidateDocumentRepository.save(newDocument);
+
+		candidate.setDocument(newDocument);
+		candidate.setUpdatedAt(LocalDateTime.now());
 		candidateRepository.save(candidate);
 	}
 
@@ -139,9 +174,11 @@ public class CandidateService {
 		CandidateDocument document = candidate.getDocument();
 		if (document != null) {
 			document.setVerified(true);
+			candidateDocumentRepository.save(document);
 		}
 
 		candidate.setOnboardStatus(OnboardStatus.DOCUMENT_VERIFIED);
+		candidate.setUpdatedAt(LocalDateTime.now());
 		return candidateRepository.save(candidate);
 	}
 
@@ -165,13 +202,12 @@ public class CandidateService {
 
 		info.setCandidate(candidate);
 		candidate.setPersonalInfo(info);
-
 		candidate.setName(newInfo.getName());
 		candidate.setEmail(newInfo.getEmail());
 		candidate.setPhoneNumber(newInfo.getPhoneNumber());
+		candidate.setUpdatedAt(LocalDateTime.now());
 
 		candidateRepository.save(candidate);
-
 		return info;
 	}
 
@@ -191,8 +227,8 @@ public class CandidateService {
 		existing.setIfscCode(bankInfoDTO.getIfscCode());
 		existing.setCandidate(candidate);
 
+		candidate.setUpdatedAt(LocalDateTime.now());
 		candidateRepository.save(candidate);
-
 		return existing;
 	}
 
@@ -212,8 +248,8 @@ public class CandidateService {
 		existing.setGraduationYear(educationalInfoDTO.getGraduationYear());
 		existing.setCandidate(candidate);
 
+		candidate.setUpdatedAt(LocalDateTime.now());
 		candidateRepository.save(candidate);
-
 		return existing;
 	}
 
